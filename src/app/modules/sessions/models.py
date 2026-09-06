@@ -13,6 +13,7 @@ class Session(Base):
 
     id = Column(String, primary_key=True, default=generate_uuid)
     title = Column(String, nullable=True)
+    user_id = Column(String, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

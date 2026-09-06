@@ -15,6 +15,7 @@ class MessageRead(MessageBase):
 
 class SessionBase(BaseModel):
     title: Optional[str] = None
+    user_id: Optional[str] = None
 
 class SessionCreate(SessionBase):
     pass

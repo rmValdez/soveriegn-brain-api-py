@@ -8,8 +8,8 @@ class SessionRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_session(self, title: Optional[str] = None) -> Session:
-        session = Session(title=title)
+    async def create_session(self, title: Optional[str] = None, user_id: Optional[str] = None) -> Session:
+        session = Session(title=title, user_id=user_id)
         self.db.add(session)
         await self.db.commit()
         return await self.get_session(session.id)
@@ -22,8 +22,11 @@ class SessionRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def list_sessions(self) -> List[Session]:
-        stmt = select(Session).order_by(Session.created_at.desc())
+    async def list_sessions(self, user_id: Optional[str] = None) -> List[Session]:
+        stmt = select(Session)
+        if user_id:
+            stmt = stmt.where(Session.user_id == user_id)
+        stmt = stmt.order_by(Session.created_at.desc())
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
 

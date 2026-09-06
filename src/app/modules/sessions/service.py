@@ -8,8 +8,8 @@ class SessionService:
     def __init__(self, db: AsyncSession):
         self.repo = SessionRepository(db)
 
-    async def create_session(self, title: Optional[str] = None) -> SessionRead:
-        session = await self.repo.create_session(title)
+    async def create_session(self, title: Optional[str] = None, user_id: Optional[str] = None) -> SessionRead:
+        session = await self.repo.create_session(title, user_id)
         return SessionRead.model_validate(session)
 
     async def get_session(self, session_id: str) -> SessionRead:
@@ -18,8 +18,8 @@ class SessionService:
             raise HTTPException(status_code=404, detail="Session not found")
         return SessionRead.model_validate(session)
 
-    async def list_sessions(self) -> List[SessionListRead]:
-        sessions = await self.repo.list_sessions()
+    async def list_sessions(self, user_id: Optional[str] = None) -> List[SessionListRead]:
+        sessions = await self.repo.list_sessions(user_id)
         return [SessionListRead.model_validate(s) for s in sessions]
 
     async def delete_session(self, session_id: str) -> bool:
