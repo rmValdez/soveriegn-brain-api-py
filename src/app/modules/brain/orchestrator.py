@@ -41,7 +41,7 @@ class BrainOrchestrator:
         
         if decision.action != "answer":
             # Route to planner execution
-            response = await self.planner.execute_plan(decision)
+            response, _ = await self.planner.execute_plan(decision, db=db, session_id=session_id)
         else:
             # Build managed context via Context Engine
             messages_context = await self.context_engine.build_context(session_id, message, db)
@@ -70,8 +70,12 @@ class BrainOrchestrator:
         decision = parse_decision_from_llm(message)
         
         if decision.action != "answer":
-            response = await self.planner.execute_plan(decision)
-            yield response
+            response, confirmation = await self.planner.execute_plan(decision, db=db, session_id=session_id)
+            if confirmation:
+                import json
+                yield f"data: {json.dumps(confirmation)}\n\n"
+            else:
+                yield response
             await repo.add_message(session_id, "assistant", response)
             return
             

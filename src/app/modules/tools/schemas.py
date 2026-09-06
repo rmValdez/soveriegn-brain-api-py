@@ -1,4 +1,5 @@
 import enum
+from datetime import datetime
 from typing import Any, Dict, Optional, List
 from pydantic import BaseModel, Field
 
@@ -27,3 +28,34 @@ class ToolResult(BaseModel):
     error: Optional[str] = None
     requires_confirmation: bool = False
     confirmation_reason: Optional[str] = None
+    execution_id: Optional[str] = None
+    status: Optional[str] = None
+    duration_ms: Optional[int] = None
+
+class ConfirmationDecisionRequest(BaseModel):
+    approved: bool = Field(default=True, description="Whether to approve or reject the tool execution")
+    reason: Optional[str] = Field(default=None, description="Optional explanation for rejection or audit notes")
+
+class ToolExecutionAuditItem(BaseModel):
+    id: str
+    session_id: Optional[str] = None
+    tool_name: str
+    permission_level: str
+    arguments: Dict[str, Any] = Field(default_factory=dict)
+    status: str
+    requires_confirmation: bool
+    confirmation_reason: Optional[str] = None
+    result_data: Optional[Any] = None
+    error: Optional[str] = None
+    executed_by: str = "user"
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
+    duration_ms: Optional[int] = None
+
+class PendingConfirmationItem(BaseModel):
+    execution_id: str
+    session_id: Optional[str] = None
+    tool_name: str
+    arguments: Dict[str, Any] = Field(default_factory=dict)
+    reason: Optional[str] = None
+    created_at: datetime

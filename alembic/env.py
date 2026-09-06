@@ -16,6 +16,7 @@ from app.core.database import Base
 from app.modules.sessions import models as sessions_models
 from app.modules.memory import models as memory_models
 from app.modules.knowledge import models as knowledge_models
+from app.modules.tools import models as tools_models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

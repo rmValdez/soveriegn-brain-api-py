@@ -15,7 +15,12 @@ class PermissionGuard:
             "C:\\Windows", "C:\\Program Files"
         ]
 
-    def evaluate(self, tool_def: ToolDefinition, arguments: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+    def evaluate(
+        self,
+        tool_def: ToolDefinition,
+        arguments: Dict[str, Any],
+        force_authorized: bool = False
+    ) -> Tuple[bool, Optional[str]]:
         """
         Determines whether the requested tool invocation can execute immediately.
         Returns:
@@ -24,8 +29,8 @@ class PermissionGuard:
             - If requires user confirmation: (False, "CONFIRMATION_REQUIRED: <reason>")
             - If blocked for security violation: (False, "BLOCKED: <reason>")
         """
-        # 1. Require explicit user confirmation for dangerous/mutating tools
-        if tool_def.permission_level == PermissionLevel.CONFIRMATION_REQUIRED:
+        # 1. Require explicit user confirmation for dangerous/mutating tools (unless human approved)
+        if tool_def.permission_level == PermissionLevel.CONFIRMATION_REQUIRED and not force_authorized:
             return False, f"CONFIRMATION_REQUIRED: Execution of '{tool_def.name}' modifies system state and requires explicit approval."
 
         # 2. Path safety inspection for filesystem tools

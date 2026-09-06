@@ -49,11 +49,16 @@ class ToolRegistry:
         self,
         name: str,
         arguments: Optional[Dict[str, Any]] = None,
-        custom_guard: Optional[PermissionGuard] = None
+        custom_guard: Optional[PermissionGuard] = None,
+        force_authorized: bool = False
     ) -> ToolResult:
         """
         Execute a registered tool under permission guard enforcement.
+        If force_authorized is True (e.g. from human approval), the CONFIRMATION_REQUIRED
+        check is bypassed while keeping structural security checks (e.g. directory traversal).
         """
+        import time
+        start_time = time.perf_counter()
         args = arguments or {}
 
         if name not in self._tools or name not in self._handlers:
@@ -68,23 +73,28 @@ class ToolRegistry:
         active_guard = custom_guard or self.guard
 
         # Evaluate execution safety through PermissionGuard
-        is_allowed, reason = active_guard.evaluate(tool_def, args)
+        is_allowed, reason = active_guard.evaluate(tool_def, args, force_authorized=force_authorized)
 
         if not is_allowed:
+            elapsed_ms = int((time.perf_counter() - start_time) * 1000)
             if reason and reason.startswith("CONFIRMATION_REQUIRED"):
                 return ToolResult(
                     success=False,
                     tool_name=name,
                     permission_level=tool_def.permission_level,
                     requires_confirmation=True,
-                    confirmation_reason=reason
+                    confirmation_reason=reason,
+                    status="pending_confirmation",
+                    duration_ms=elapsed_ms
                 )
             else:
                 return ToolResult(
                     success=False,
                     tool_name=name,
                     permission_level=tool_def.permission_level,
-                    error=reason or "Tool execution rejected by security policy."
+                    error=reason or "Tool execution rejected by security policy.",
+                    status="blocked",
+                    duration_ms=elapsed_ms
                 )
 
         # Authorized to execute
@@ -95,18 +105,24 @@ class ToolRegistry:
             else:
                 result = handler(**args)
 
+            elapsed_ms = int((time.perf_counter() - start_time) * 1000)
             return ToolResult(
                 success=True,
                 tool_name=name,
                 permission_level=tool_def.permission_level,
-                data=result
+                data=result,
+                status="executed",
+                duration_ms=elapsed_ms
             )
         except Exception as e:
+            elapsed_ms = int((time.perf_counter() - start_time) * 1000)
             return ToolResult(
                 success=False,
                 tool_name=name,
                 permission_level=tool_def.permission_level,
-                error=f"Runtime error during '{name}' execution: {str(e)}"
+                error=f"Runtime error during '{name}' execution: {str(e)}",
+                status="failed",
+                duration_ms=elapsed_ms
             )
 
 # Global registry instance
