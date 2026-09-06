@@ -1,10 +1,12 @@
-# Project Sovereign — Python Model Layer & Sovereign Behavior Architecture
+# Project Sovereign — Python Sovereign Brain & Next.js Application Shell
 
 > **Persistent Blueprint for Sovereign Cognitive Platform**
 >
-> **Core Principle:** Python handles the model. Sovereign handles the behavior. Next.js handles the application.
+> **Core Principle:** Next.js handles the application. Python/FastAPI is the Sovereign Brain — orchestration, memory, knowledge, tools, and planning.
 >
-> **Architecture Direction:** Next.js Application Monolith + Sovereign Cognitive Engine + Python Model Gateway + PostgreSQL/pgvector + Ollama
+> **Architecture Direction:** Next.js Application Monolith + FastAPI Sovereign Brain + PostgreSQL/pgvector + Ollama
+>
+> See [ARCHITECTURE_DECISION.md](ARCHITECTURE_DECISION.md) for why this direction was chosen over an earlier draft that proposed moving cognition into Next.js.
 
 ---
 
@@ -16,23 +18,21 @@ PROJECT SOVEREIGN
 Next.js (Port 3008)
 ├── UI
 ├── BFF / API
-├── Sessions & Messages
-├── Cognitive orchestration
-├── Memory
-├── RAG
-├── Tools
-├── Permissions / Confirmations
-├── Planner
-└── Model routing
+├── Auth, user preferences (Prisma)
+├── Session metadata
+└── SSE proxy to FastAPI
         │
         ▼
-Python (Port 3009)
-├── FastAPI
-├── LLM abstraction
-├── Ollama adapter
+Python / FastAPI — Sovereign Brain (Port 3009)
+├── Brain orchestration & decisions
+├── Context Engine
+├── Long-term memory (extraction + hybrid retrieval)
+├── Knowledge / RAG (ingestion, chunking, pgvector search)
+├── Tool Registry & Permission Guardrails
+├── Planner (multi-step execution)
+├── LLM abstraction / Ollama adapter
 ├── Streaming
-├── Embeddings
-└── Model/inference communication
+└── Embeddings
         │
         ▼
 Ollama (Port 11434)
@@ -52,8 +52,8 @@ PostgreSQL + pgvector (Port 5434)
 
 ### The Unbreakable Principle:
 
-> **Next.js = Sovereign brain/behavior + application**  
-> **Python = model layer/gateway**  
+> **Next.js = application shell (UI, auth, BFF)**  
+> **Python/FastAPI = Sovereign brain/behavior + model layer**  
 > **Ollama = local inference**  
 > **No third backend language/runtime.**
 
@@ -149,8 +149,8 @@ The goal is to make the model behave as part of a larger Sovereign cognitive sys
 | **Phase 4** | **Conversation History & Context Engine** | `conversation_summaries`, sliding window, token budgeting, Context Engine | ✅ **Completed** |
 | **Phase 5** | **Long-Term Memory & Hybrid Retrieval** | `memories` table, structured fact extraction + pgvector cosine similarity | ✅ **Completed** |
 | **Phase 6** | **Tool Registry & Permission Guardrails** | Centralized tool registry, safety classification (read-only vs dangerous) | ✅ **Completed** |
-| **Phase 7** | **Security & User Confirmations** | Interactive UI confirmation cards, approval endpoints, execution audit trail | 🔄 **Next Up** |
-| **Phase 8** | **Knowledge Ingestion & pgvector RAG** | Document chunking, vector indexing, retrieval with grounded citations | 📋 Planned |
+| **Phase 7** | **Security & User Confirmations** | Interactive UI confirmation cards, approval endpoints, execution audit trail | ✅ **Completed** |
+| **Phase 8** | **Knowledge Ingestion & pgvector RAG** | Document chunking, vector indexing, retrieval with grounded citations | 🔄 **Next Up** |
 | **Phase 9** | **Planner & Autonomous Multi-Step Loop** | Progressive autonomy, plan-step-observe-reflect loop, tool synthesis | 📋 Planned |
 | **Phase 10** | **Production Hardening & Model Routing** | Model router (Qwen vs Coder), resource telemetry, single-command startup | 📋 Planned |
 
