@@ -76,8 +76,8 @@
 | **Phase 3** | **Next.js + SSE Client UI** | Next.js 15 FAOS App Router (:3008), SSE parser, markdown chat & sidebar | ✅ **Completed** |
 | **Phase 4** | **Conversation History & Context Engine** | `conversation_summaries`, sliding window, token budgeting, Context Engine | ✅ **Completed** |
 | **Phase 5** | **Long-Term Memory & Hybrid Retrieval** | `memories` table, structured fact extraction + pgvector cosine similarity | ✅ **Completed** |
-| **Phase 6** | **Tool Registry & Permission Guardrails** | Centralized tool registry, safety classification (read-only vs dangerous) | ✅ **Completed** |
 | **Phase 7** | **Security & User Confirmations** | Guardrails requiring interactive user approval for destructive operations | 🔄 **Next Up** |
+| **Phase 7B** | **Next.js BFF Prisma Layer** | Prisma ORM in Next.js for User Accounts, Preferences, and Audit State | 📌 **Flagged (Planned)** |
 | **Phase 8** | **Knowledge Ingestion & pgvector RAG** | Document chunking, vector indexing, retrieval with grounded citations | 📋 Planned |
 | **Phase 9** | **Planner & Autonomous Execution** | Progressive autonomy, multi-step planning loops, tool observation loop | 📋 Planned |
 | **Phase 10** | **Production Hardening & Deployment** | Audit logs, benchmarks, rate limiting, and release packaging | 📋 Planned |
@@ -225,6 +225,23 @@ Permission Guard
 - Next.js UI modal/inline widget rendering interactive approval cards for pending tool calls.
 - FastAPI confirmation endpoint: `POST /api/v1/tools/confirm/{execution_id}` with decision (`approved` / `rejected`).
 - Backend audit log table: `tool_executions` recording every invocation, arguments, approver, status, and output.
+
+---
+
+### 📌 Phase 7B: Next.js Monolith BFF + Prisma ORM Layer (Flagged)
+- **Goal**: Establish a pure application backend layer inside the Next.js Monolith using Prisma ORM connected to PostgreSQL (`:5434`).
+- **Core Separation**:
+  - **Next.js Monolith + Prisma**: Owns application-level data (User accounts, user preferences, theme/model defaults, session metadata, bookmarks, and UI audit records).
+  - **FastAPI Sovereign Brain**: Owns the cognitive engine (ContextEngine, long-term memory extraction, pgvector semantic search, tool registry, and Ollama dispatch).
+- **Key Deliverables**:
+  - Prisma CLI & `@prisma/client` dependency in `soveriegn-brain-app`.
+  - Connection string: `DATABASE_URL=postgresql://postgres:mysecretpassword@localhost:5434/sovereign_brain` in `.env.local`.
+  - Schema (`prisma/schema.prisma`):
+    - `User`: user accounts, identity, email.
+    - `UserPreference`: dark/light theme, default models, notification settings.
+    - `SessionMetadata`: tags, pin state, client-side metadata.
+  - Singleton Prisma client instance at `src/shared/lib/prisma.ts`.
+  - Next.js Server Actions utilizing Prisma for direct, type-safe database queries.
 
 ---
 
