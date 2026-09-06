@@ -138,3 +138,10 @@ docker compose exec api uv run alembic upgrade head
 ## 💻 Frontend (Next.js / Vite) Integration
 
 The API comes with **CORS enabled** (`http://localhost:3000` allowed by default). You can connect a Next.js or React frontend directly to `http://localhost:3009`.
+
+---
+
+## 📚 Documentation & Developer Guides
+
+- 🏛️ **[System Architecture Guide](file:///c:/Users/My%20PC/Documents/Github/personal/project-py/soveriegn-brain-api-py/docs/ARCHITECTURE.md)**: Deep dive into the cognitive orchestrator, prompt lifecycle, domain modules, and database ER diagram.
+- 💡 **[Junior Developer Guide & Gotchas](file:///c:/Users/My%20PC/Documents/Github/personal/project-py/soveriegn-brain-api-py/docs/GOOD_TO_KNOW.md)**: Onboarding guide covering the top 5 pitfalls (Async SQLAlchemy, pgvector migrations, Docker host networking), how to add new tools, and common daily commands.
