@@ -699,47 +699,35 @@ Do not expose sensitive internal information to the user interface unnecessarily
 
 # 18. Incremental Development Roadmap
 
-| Phase       | Milestone                                            | Status        |
-| ----------- | ---------------------------------------------------- | ------------- |
-| **Phase 1** | FastAPI + Brain + LLMProvider + OllamaAdapter        | ✅ Implemented |
-| **Phase 2** | Sessions & Messages persistence                      | ✅ Implemented |
-| **Phase 3** | Next.js frontend + SSE integration                   | ✅ Implemented |
-| **Phase 4** | Long-Term Memory curation & extraction               | 🔄 Ready      |
-| **Phase 5** | Tool Registry + Permission boundary + execution loop | 🔄 Ready      |
-| **Phase 6** | Knowledge ingestion + pgvector RAG                   | 🔄 Ready      |
-| **Phase 7** | Planner + dynamic multi-step execution               | 🔄 Ready      |
-| **Phase 8** | Advanced permission policies + confirmations         | 🔄 Ready      |
-| **Phase 9** | Production hardening + deployment                    | 🔄 Ready      |
+> **See `IMPLEMENTATION_PLAN.md` for the current, authoritative phase-status
+> table.** This doc’s phase numbering predates that tracker and had drifted
+> out of sync with it (e.g. this table showed Memory/Tools/Knowledge/Planner
+> all still "Ready" i.e. not started, while `IMPLEMENTATION_PLAN.md` showed
+> most of them completed and tested). Rather than keep a third copy, this
+> section defers to the one tracker.
 
 ### Important
 
-The basic permission/safety boundary must exist **before any dangerous tool is exposed**.
-
-Phase 8 therefore represents the expansion and hardening of the permission system, not the first introduction of security.
+The basic permission/safety boundary must exist **before any dangerous tool is exposed**. That boundary (`PermissionGuard`, tool confirmation workflow, audit trail) is implemented and tested — see Phase 6/7 in `IMPLEMENTATION_PLAN.md`. Remaining security work (API auth, rate limiting) is tracked there under Phase 10.
 
 ---
 
 # 19. Recommended Implementation Order From Here
 
-The safest next progression is:
+The safest next progression (see `IMPLEMENTATION_PLAN.md` for which of these
+are already done vs. still open) is:
 
 ```text
-Phase 4
 Memory
  ↓
-Phase 5
 Tools + Permission Boundary
  ↓
-Phase 6
 Knowledge / RAG
  ↓
-Phase 7
 Planner + Agent Loop
  ↓
-Phase 8
 Advanced Security / Confirmations
  ↓
-Phase 9
 Production Hardening
 ```
 

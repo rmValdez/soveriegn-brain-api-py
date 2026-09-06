@@ -758,18 +758,15 @@ Action history / audit trail
 
 # 16. Phased Implementation Roadmap
 
-| Phase        | System                                    |  Status |
-| ------------ | ----------------------------------------- | :-----: |
-| **Phase 1**  | FastAPI + Brain + Ollama Abstraction      |  ✅ Done |
-| **Phase 2**  | Sessions + Messages Persistence           |  ✅ Done |
-| **Phase 3**  | Next.js + SSE Integration                 |  ✅ Done |
-| **Phase 4**  | **Conversation History + Context Engine** | 🔄 Next |
-| **Phase 5**  | **Long-Term Memory + Hybrid Retrieval**   |    🔄   |
-| **Phase 6**  | **Tool Registry + Permission Guardrails** |    🔄   |
-| **Phase 7**  | **Security + User Confirmations**         |    🔄   |
-| **Phase 8**  | **Knowledge Ingestion + pgvector RAG**    |    🔄   |
-| **Phase 9**  | **Planner + Multi-Step Execution**        |    🔄   |
-| **Phase 10** | **Production Hardening + Deployment**     |    🔄   |
+> **See `IMPLEMENTATION_PLAN.md` for the current, authoritative phase-status
+> table.** This section previously kept its own copy, which drifted out of
+> sync with the tracker in `IMPLEMENTATION_PLAN.md` (this doc had Phases
+> 4-10 marked as not yet started, while the other doc had Phases 4-7 marked
+> completed — both couldn't be right). Maintaining one tracker instead of
+> duplicating it across docs is the fix.
+>
+> The recommended development order below (§17) is still accurate as
+> architectural sequencing guidance, independent of what's actually shipped.
 
 ---
 
