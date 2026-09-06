@@ -162,6 +162,8 @@ The goal is to make the model behave as part of a larger Sovereign cognitive sys
 | **Phase 10** | **Production Hardening** | Login rate-limiting done (Next.js side, Redis). Still missing: FastAPI-side API auth (`core/security.py`, currently empty), structured request logging (`core/logging.py`, currently empty), model routing (Qwen vs Coder), GPU keep-alive/idle unload, deployment automation | 🔄 In Progress |
 
 > This table is the single source of truth for phase status. `ARCHITECTURE.md` and `WORKFLOW_AND_ROADMAP.md` link here rather than keeping their own copies — the project has drifted out of sync three times from duplicated status tables going stale independently.
+>
+> Expanding tools/skills (new file operations, real web search, weather, a coding agent, etc.) extends Phases 6–10 above — see `IMPLEMENTATION_SKILL_PLAN.md` for the draft evaluation. It is explicitly not a competing Phase 0–10; don't let it become a fourth tracker.
 
 ---
 
