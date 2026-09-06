@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 class MessageBase(BaseModel):
     role: str
@@ -11,8 +11,7 @@ class MessageRead(MessageBase):
     session_id: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SessionBase(BaseModel):
     title: Optional[str] = None
@@ -26,13 +25,11 @@ class SessionRead(SessionBase):
     updated_at: datetime
     messages: List[MessageRead] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SessionListRead(SessionBase):
     id: str
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
