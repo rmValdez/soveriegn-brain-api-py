@@ -11,48 +11,51 @@
 # 🏛️ System Architecture
 
 ```text
-                    PROJECT SOVEREIGN
-                           │
-                           ▼
-                  Next.js Application
-                     (Port 3008)
-                           │
-                           ▼
-              Sovereign Cognitive Behavior
-                           │
-          ┌────────────────┼────────────────┐
-          │                │                │
-       Memory             RAG             Tools
-          │                │                │
-          └────────────────┼────────────────┘
-                           │
-                           ▼
-                  Context / Decisions
-                           │
-                           ▼
-                  Python Model Layer
-                     (Port 3009)
-                           │
-                    Ollama Adapter
-                           │
-                           ▼
-                        Ollama
-                     (Port 11434)
-                           │
-             ┌─────────────┼─────────────┐
-             ▼             ▼             ▼
-           Qwen       Qwen Coder     Other Models
+PROJECT SOVEREIGN
 
-          ┌──────────────────────────────┐
-          │    PostgreSQL + pgvector     │
-          │         (Port 5434)          │
-          │                              │
-          │ Users          Sessions      │
-          │ Messages       Summaries     │
-          │ Memories       Knowledge     │
-          │ Tool Executions Audit Logs   │
-          └──────────────────────────────┘
+Next.js (Port 3008)
+├── UI
+├── BFF / API
+├── Sessions & Messages
+├── Cognitive orchestration
+├── Memory
+├── RAG
+├── Tools
+├── Permissions / Confirmations
+├── Planner
+└── Model routing
+        │
+        ▼
+Python (Port 3009)
+├── FastAPI
+├── LLM abstraction
+├── Ollama adapter
+├── Streaming
+├── Embeddings
+└── Model/inference communication
+        │
+        ▼
+Ollama (Port 11434)
+├── Qwen 2.5
+├── Qwen Coder
+└── Other local models
+
+        ▼
+PostgreSQL + pgvector (Port 5434)
+├── Users
+├── Sessions & Messages
+├── Summaries
+├── Memories
+├── Knowledge Chunks
+└── Tool Executions & Audit Logs
 ```
+
+### The Unbreakable Principle:
+
+> **Next.js = Sovereign brain/behavior + application**  
+> **Python = model layer/gateway**  
+> **Ollama = local inference**  
+> **No third backend language/runtime.**
 
 ---
 
