@@ -1,11 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional, List, Dict
 
 class LLMProvider(ABC):
+    """
+    Abstract interface for LLM execution in Sovereign Brain.
+    Ollama is the exclusive provider implementation.
+    """
     @abstractmethod
-    async def chat(self, messages: list[dict], model: str) -> str:
+    async def chat(self, messages: List[Dict[str, str]], model: Optional[str] = None) -> str:
+        """Send chat messages and return complete response text."""
         pass
         
     @abstractmethod
-    async def stream_chat(self, messages: list[dict], model: str) -> AsyncGenerator[str, None]:
+    async def stream_chat(self, messages: List[Dict[str, str]], model: Optional[str] = None) -> AsyncGenerator[str, None]:
+        """Stream chat tokens progressively."""
         pass

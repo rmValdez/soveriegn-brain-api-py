@@ -8,10 +8,16 @@ from app.modules.knowledge.router import router as knowledge_router
 
 app = FastAPI(title=settings.app_name)
 
-# Enable CORS for Next.js frontend (default port 3000) and other clients
+# Enable CORS for Next.js frontend (port 3008) and other clients
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_origins=[
+        "http://localhost:3008",
+        "http://127.0.0.1:3008",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "*",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
