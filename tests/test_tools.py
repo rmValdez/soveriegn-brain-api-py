@@ -28,6 +28,25 @@ def test_permission_guard_requires_confirmation_for_mutations():
     assert is_allowed is False
     assert "CONFIRMATION_REQUIRED" in reason
 
+def test_permission_guard_blocks_env_file_by_bare_relative_path():
+    # A bare relative path like ".env" has no ".." and no system-path
+    # prefix, so only an explicit basename check catches it.
+    guard = PermissionGuard()
+    tool_def = ToolDefinition(
+        name="test_read",
+        description="test",
+        permission_level=PermissionLevel.READ_ONLY
+    )
+    is_allowed, reason = guard.evaluate(tool_def, {"filepath": ".env"}, force_authorized=True)
+    assert is_allowed is False
+    assert "BLOCKED" in reason
+
+    is_allowed_nested, reason_nested = guard.evaluate(
+        tool_def, {"filepath": "some/nested/dir/.env.local"}, force_authorized=True
+    )
+    assert is_allowed_nested is False
+    assert "BLOCKED" in reason_nested
+
 def test_permission_guard_blocks_path_traversal():
     guard = PermissionGuard()
     tool_def = ToolDefinition(
