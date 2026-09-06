@@ -76,8 +76,8 @@
 | **Phase 3** | **Next.js + SSE Client UI** | Next.js 15 FAOS App Router (:3008), SSE parser, markdown chat & sidebar | ✅ **Completed** |
 | **Phase 4** | **Conversation History & Context Engine** | `conversation_summaries`, sliding window, token budgeting, Context Engine | ✅ **Completed** |
 | **Phase 5** | **Long-Term Memory & Hybrid Retrieval** | `memories` table, structured fact extraction + pgvector cosine similarity | ✅ **Completed** |
-| **Phase 6** | **Tool Registry & Permission Guardrails** | Centralized tool registry, safety classification (read-only vs dangerous) | 🔄 **Next Up** |
-| **Phase 7** | **Security & User Confirmations** | Guardrails requiring interactive user approval for destructive operations | 📋 Planned |
+| **Phase 6** | **Tool Registry & Permission Guardrails** | Centralized tool registry, safety classification (read-only vs dangerous) | ✅ **Completed** |
+| **Phase 7** | **Security & User Confirmations** | Guardrails requiring interactive user approval for destructive operations | 🔄 **Next Up** |
 | **Phase 8** | **Knowledge Ingestion & pgvector RAG** | Document chunking, vector indexing, retrieval with grounded citations | 📋 Planned |
 | **Phase 9** | **Planner & Autonomous Execution** | Progressive autonomy, multi-step planning loops, tool observation loop | 📋 Planned |
 | **Phase 10** | **Production Hardening & Deployment** | Audit logs, benchmarks, rate limiting, and release packaging | 📋 Planned |
