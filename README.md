@@ -151,7 +151,8 @@ docker compose exec api uv run alembic upgrade head
 
 ## 📚 Documentation & Developer Guides
 
-- 🎯 **[Architecture Decision](docs/ARCHITECTURE_DECISION.md)**: Why FastAPI owns cognition and Next.js is the application shell — read this first.
+- 🌐 **[Full System Architecture](../SYSTEM_ARCHITECTURE.md)**: The single source of truth for how this repo and `soveriegn-brain-app` fit together — diagrams, request flows, ports, ownership. Read this first if you're new to the project as a whole.
+- 🎯 **[Architecture Decision](docs/ARCHITECTURE_DECISION.md)**: Why FastAPI owns cognition and Next.js is the application shell.
 - 🏛️ **[System Architecture Guide](docs/ARCHITECTURE.md)**: Deep dive into the cognitive orchestrator, prompt lifecycle, domain modules, and database ER diagram.
 - 📊 **[Implementation Plan](docs/IMPLEMENTATION_PLAN.md)**: The single source of truth for what's built vs. planned, phase by phase.
 - 💡 **[Junior Developer Guide & Gotchas](docs/GOOD_TO_KNOW.md)**: Onboarding guide covering the top 5 pitfalls (Async SQLAlchemy, pgvector migrations, Docker host networking), how to add new tools, and common daily commands.
