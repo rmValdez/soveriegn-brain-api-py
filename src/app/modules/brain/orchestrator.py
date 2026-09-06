@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.brain.interfaces import LLMProvider
 from app.infrastructure.ollama.adapter import OllamaAdapter
 from app.modules.sessions.repository import SessionRepository
+from .context import ContextEngine
 from .decisions import parse_decision_from_llm
 from .planner import PlannerService
 
@@ -10,12 +11,13 @@ class BrainOrchestrator:
     """
     Sovereign Brain Cognitive Orchestrator.
     Routes user requests, orchestrates planning/tools/memory,
-    and executes model inference through the exclusive LLMProvider (OllamaAdapter).
+    and executes model inference through ContextEngine and LLMProvider (OllamaAdapter).
     """
     
-    def __init__(self, llm: Optional[LLMProvider] = None):
+    def __init__(self, llm: Optional[LLMProvider] = None, context_engine: Optional[ContextEngine] = None):
         self.planner = PlannerService()
         self.llm = llm or OllamaAdapter()
+        self.context_engine = context_engine or ContextEngine(llm=self.llm)
     
     async def process_message(
         self,
@@ -38,9 +40,8 @@ class BrainOrchestrator:
             # Route to planner execution
             response = await self.planner.execute_plan(decision)
         else:
-            # Fetch conversation history and generate direct LLM response
-            session = await repo.get_session(session_id)
-            messages_context = [{"role": m.role, "content": m.content} for m in session.messages]
+            # Build managed context via Context Engine
+            messages_context = await self.context_engine.build_context(session_id, message, db)
             response = await self.llm.chat(messages_context)
         
         await repo.add_message(session_id, "assistant", response)
@@ -68,8 +69,8 @@ class BrainOrchestrator:
             await repo.add_message(session_id, "assistant", response)
             return
             
-        session = await repo.get_session(session_id)
-        messages_context = [{"role": m.role, "content": m.content} for m in session.messages]
+        # Build managed context via Context Engine (System prompt + Summary + Recent messages)
+        messages_context = await self.context_engine.build_context(session_id, message, db)
         
         full_response = ""
         async for token in self.llm.stream_chat(messages_context):

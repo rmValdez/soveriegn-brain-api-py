@@ -29,6 +29,7 @@ services:
       # Mount source code and migrations for live reloading and synced migrations
       - ./src:/app/src
       - ./alembic:/app/alembic
+      - ./tests:/app/tests
     restart: unless-stopped
 
 volumes:

@@ -2,7 +2,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from app.modules.sessions.models import Session, Message
+from app.modules.sessions.models import Session, Message, ConversationSummary
 
 class SessionRepository:
     def __init__(self, db: AsyncSession):
@@ -15,7 +15,10 @@ class SessionRepository:
         return await self.get_session(session.id)
 
     async def get_session(self, session_id: str) -> Optional[Session]:
-        stmt = select(Session).where(Session.id == session_id).options(selectinload(Session.messages))
+        stmt = select(Session).where(Session.id == session_id).options(
+            selectinload(Session.messages),
+            selectinload(Session.summary)
+        )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -46,3 +49,35 @@ class SessionRepository:
             await self.db.commit()
 
         return message
+
+    async def get_summary(self, session_id: str) -> Optional[ConversationSummary]:
+        stmt = select(ConversationSummary).where(ConversationSummary.session_id == session_id)
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def upsert_summary(
+        self,
+        session_id: str,
+        summary: str,
+        last_message_id: Optional[str] = None,
+        tokens_count: Optional[int] = None
+    ) -> ConversationSummary:
+        existing = await self.get_summary(session_id)
+        if existing:
+            existing.summary = summary
+            existing.last_message_id = last_message_id
+            existing.tokens_count = tokens_count
+            await self.db.commit()
+            await self.db.refresh(existing)
+            return existing
+        else:
+            new_summary = ConversationSummary(
+                session_id=session_id,
+                summary=summary,
+                last_message_id=last_message_id,
+                tokens_count=tokens_count
+            )
+            self.db.add(new_summary)
+            await self.db.commit()
+            await self.db.refresh(new_summary)
+            return new_summary
