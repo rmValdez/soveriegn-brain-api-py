@@ -5,6 +5,7 @@ from app.modules.chat.router import router as chat_router
 from app.modules.sessions.router import router as sessions_router
 from app.modules.memory.router import router as memory_router
 from app.modules.knowledge.router import router as knowledge_router
+from app.modules.tools.router import router as tools_router
 
 app = FastAPI(title=settings.app_name)
 
@@ -31,3 +32,4 @@ app.include_router(chat_router, prefix="/api/v1")
 app.include_router(sessions_router, prefix="/api/v1")
 app.include_router(memory_router)
 app.include_router(knowledge_router)
+app.include_router(tools_router)
