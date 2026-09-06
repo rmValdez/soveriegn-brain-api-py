@@ -13,7 +13,8 @@ class PlannerService:
         self,
         decision: BrainDecision,
         db: Optional[AsyncSession] = None,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> Tuple[str, Optional[Dict[str, Any]]]:
         """
         Executes a planned action.
@@ -40,7 +41,7 @@ class PlannerService:
                         status="pending_confirmation",
                         requires_confirmation=True,
                         confirmation_reason=reason,
-                        executed_by="user",
+                        executed_by=user_id or "user",
                     )
                     db.add(audit_record)
                     await db.commit()

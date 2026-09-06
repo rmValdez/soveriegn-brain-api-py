@@ -35,6 +35,7 @@ class ToolResult(BaseModel):
 class ConfirmationDecisionRequest(BaseModel):
     approved: bool = Field(default=True, description="Whether to approve or reject the tool execution")
     reason: Optional[str] = Field(default=None, description="Optional explanation for rejection or audit notes")
+    user_id: Optional[str] = Field(default=None, description="Identifier of the user making this decision, for audit attribution")
 
 class ToolExecutionAuditItem(BaseModel):
     id: str

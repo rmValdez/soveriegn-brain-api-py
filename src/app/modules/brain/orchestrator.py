@@ -23,12 +23,13 @@ class BrainOrchestrator:
         self,
         message: str,
         db: AsyncSession,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> Tuple[str, str]:
         repo = SessionRepository(db)
         
         if not session_id:
-            session = await repo.create_session()
+            session = await repo.create_session(user_id=user_id)
             session_id = session.id
             
         await repo.add_message(session_id, "user", message)
@@ -41,7 +42,7 @@ class BrainOrchestrator:
         
         if decision.action != "answer":
             # Route to planner execution
-            response, _ = await self.planner.execute_plan(decision, db=db, session_id=session_id)
+            response, _ = await self.planner.execute_plan(decision, db=db, session_id=session_id, user_id=user_id)
         else:
             # Build managed context via Context Engine
             messages_context = await self.context_engine.build_context(session_id, message, db)
@@ -54,12 +55,13 @@ class BrainOrchestrator:
         self,
         message: str,
         db: AsyncSession,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> AsyncGenerator[str, None]:
         repo = SessionRepository(db)
         
         if not session_id:
-            session = await repo.create_session()
+            session = await repo.create_session(user_id=user_id)
             session_id = session.id
             
         await repo.add_message(session_id, "user", message)
@@ -70,7 +72,7 @@ class BrainOrchestrator:
         decision = parse_decision_from_llm(message)
         
         if decision.action != "answer":
-            response, confirmation = await self.planner.execute_plan(decision, db=db, session_id=session_id)
+            response, confirmation = await self.planner.execute_plan(decision, db=db, session_id=session_id, user_id=user_id)
             if confirmation:
                 import json
                 yield f"data: {json.dumps(confirmation)}\n\n"

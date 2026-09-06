@@ -149,6 +149,8 @@ async def approve_confirmation(
     record.error = result.error
     record.resolved_at = datetime.now(timezone.utc)
     record.duration_ms = result.duration_ms
+    if decision.user_id:
+        record.executed_by = decision.user_id
 
     await db.commit()
     await db.refresh(record)
