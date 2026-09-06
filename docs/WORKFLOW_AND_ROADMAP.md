@@ -26,6 +26,50 @@ Next.js (Port 3008)
 
 ---
 
+## 🔮 Future Architecture Evolution: Next.js as BFF + Prisma
+
+As the application scales, Next.js can evolve into a **Backend-For-Frontend (BFF)** layer equipped with **Prisma** for direct application state and database access:
+
+```text
+                 ┌──────────────────────┐
+                 │       Browser        │
+                 │  React / Next.js UI  │
+                 └──────────┬───────────┘
+                            │
+                            ▼
+                 ┌──────────────────────┐
+                 │      Next.js         │
+                 │   Frontend + BFF     │
+                 │                      │
+                 │ Server Components    │
+                 │ Server Actions       │
+                 │ API Routes           │
+                 │ Prisma               │
+                 └───────┬───────┬──────┘
+                         │       │
+                    PostgreSQL   │ HTTP / SSE
+                                │
+                                ▼
+                    ┌──────────────────┐
+                    │     FastAPI      │
+                    │ Sovereign Brain  │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                          Ollama
+```
+
+### Role Separation:
+1. **Next.js (Frontend + BFF)**:
+   - Manages user accounts, application preferences, UI caches, and session metadata via **Prisma**.
+   - Serves Server Components, Server Actions, and proxies AI requests to FastAPI.
+2. **FastAPI (Sovereign Brain)**:
+   - Remains the dedicated, unencumbered **cognitive intelligence engine**.
+   - Responsible for agent loops, tool sandboxing, knowledge vector search (`pgvector`), and Ollama model dispatch.
+
+
+---
+
 ## 🔄 Core Cognitive Workflow (The Native Agent Loop)
 
 ```text
