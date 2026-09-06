@@ -1,279 +1,757 @@
-# Project Sovereign — Implementation Plan & Progress Tracker
+# Project Sovereign — Next.js Monolith Architecture & Migration Plan
 
-> **Persistent Blueprint for Sovereign Cognitive Platform**  
-> *Last Updated: March 2026*
+> **Persistent Blueprint for Sovereign Cognitive Platform**
+>
+> **Architecture Direction:** Next.js Monolith + PostgreSQL/pgvector + Ollama
+>
+> **Migration Strategy:** Incremental migration from the existing FastAPI Brain
+>
+> **Principle:** Preserve completed work while progressively moving the cognitive engine into the Next.js monolith.
 
 ---
 
-## 🏛️ System Architecture Overview
+# 🏛️ Target System Architecture
 
 ```text
                               ┌──────────────────────┐
                               │       Browser        │
-                              │    React / Next.js   │
+                              │    React / Next.js    │
                               └──────────┬───────────┘
                                          │
                                          ▼
-                         ┌────────────────────────────────┐
-                         │         NEXT.JS MONOLITH        │
-                         │             + BFF               │
-                         │                                │
-                         │ • React / UI (Port 3008)       │
-                         │ • Server Components (SSR)      │
-                         │ • Client Components            │
-                         │ • Server Actions               │
-                         │ • SSE Stream Consumer          │
-                         │ • Zustand UI State             │
-                         └───────────────┬────────────────┘
-                                         │
-                                  HTTP / SSE
-                                         │
-                                         ▼
-                         ┌────────────────────────────────┐
-                         │          FASTAPI                 │
-                         │       SOVEREIGN BRAIN          │
-                         │                                │
-                         │ • Brain Orchestration (Port 3009)│
-                         │ • Context Engine               │
-                         │ • Long-Term Memory             │
-                         │ • Knowledge / RAG              │
-                         │ • Tool Registry & Permissions  │
-                         │ • Multi-Step Planner           │
-                         │ • LLM Provider (OllamaAdapter) │
-                         └───────────────┬────────────────┘
-                                         │
-                                         ▼
-                              ┌──────────────────┐
-                              │      Ollama      │
-                              │   Port 11434     │
-                              │                  │
-                              │ Qwen2.5 / Qwen3 │
-                              │ EmbeddingGemma  │
-                              └──────────────────┘
-
-                         ┌─────────────────────────┐
-                         │ PostgreSQL + pgvector   │
-                         │ Port 5434               │
-                         │                         │
-                         │ Users                   │
-                         │ Sessions                │
-                         │ Messages                │
-                         │ Summaries               │
-                         │ Memories                │
-                         │ Knowledge Chunks        │
-                         │ Tool Executions         │
-                         └─────────────────────────┘
+              ┌──────────────────────────────────────────────┐
+              │              NEXT.JS MONOLITH                │
+              │                   :3008                      │
+              │                                              │
+              │ ┌──────────────────────────────────────────┐ │
+              │ │ Presentation Layer                       │ │
+              │ │ • React / App Router                     │ │
+              │ │ • Server Components                       │ │
+              │ │ • Client Components                       │ │
+              │ │ • Zustand UI State                        │ │
+              │ │ • Streaming Chat UI                       │ │
+              │ └──────────────────────────────────────────┘ │
+              │                                              │
+              │ ┌──────────────────────────────────────────┐ │
+              │ │ Application / BFF Layer                  │ │
+              │ │ • Route Handlers                           │ │
+              │ │ • Server Actions                           │ │
+              │ │ • Authentication                           │ │
+              │ │ • User Preferences                         │ │
+              │ │ • Session Metadata                         │ │
+              │ │ • Audit State                              │ │
+              │ └──────────────────────────────────────────┘ │
+              │                                              │
+              │ ┌──────────────────────────────────────────┐ │
+              │ │ Sovereign Cognitive Engine               │ │
+              │ │ • LLM Provider                             │ │
+              │ │ • Ollama Adapter                           │ │
+              │ │ • Context Engine                           │ │
+              │ │ • Conversation Summarizer                  │ │
+              │ │ • Long-Term Memory                         │ │
+              │ │ • Hybrid Retrieval / RAG                   │ │
+              │ │ • Tool Registry                            │ │
+              │ │ • Permission Guard                         │ │
+              │ │ • Confirmation Manager                     │ │
+              │ │ • Planner                                  │ │
+              │ │ • Agent Execution Loop                     │ │
+              │ └──────────────────────────────────────────┘ │
+              │                                              │
+              │ ┌──────────────────────────────────────────┐ │
+              │ │ Data Access Layer                         │ │
+              │ │ • Prisma ORM                               │ │
+              │ │ • PostgreSQL Client                        │ │
+              │ │ • pgvector                                 │ │
+              │ └──────────────────────────────────────────┘ │
+              └───────────────────────┬──────────────────────┘
+                                      │
+                    ┌─────────────────┴──────────────────┐
+                    │                                    │
+                    ▼                                    ▼
+          ┌────────────────────┐              ┌────────────────────┐
+          │ PostgreSQL         │              │ Ollama             │
+          │ + pgvector         │              │ :11434             │
+          │                    │              │                    │
+          │ Users              │              │ Qwen                │
+          │ Sessions           │              │ Qwen Coder          │
+          │ Messages           │              │ EmbeddingGemma      │
+          │ Summaries          │              │ Other local models  │
+          │ Memories           │              └────────────────────┘
+          │ Knowledge          │
+          │ Tool Executions    │
+          │ Audit Logs         │
+          └────────────────────┘
 ```
 
 ---
 
-## 📊 Phased Roadmap & Progress Status
+# 🎯 Core Architectural Decision
+
+Project Sovereign will ultimately operate as a **Next.js monolith**.
+
+Next.js becomes the primary application and cognitive runtime.
+
+FastAPI is treated as a **migration-stage component**, not a permanent architectural dependency.
+
+The final runtime should not require:
+
+```text
+Next.js → FastAPI → Ollama
+```
+
+Instead:
+
+```text
+Next.js
+   ├── Application
+   ├── BFF
+   ├── Cognitive Engine
+   ├── Memory
+   ├── RAG
+   ├── Tools
+   ├── Planner
+   └── Ollama Adapter
+          │
+          ▼
+       Ollama
+```
+
+---
+
+# 🔄 Migration Strategy
+
+Do NOT rewrite the entire system at once.
+
+Existing completed functionality must be preserved and migrated incrementally.
+
+## Current Architecture
+
+```text
+Browser
+   ↓
+Next.js :3008
+   ↓ HTTP / SSE
+FastAPI :3009
+   ↓
+Ollama :11434
+   ↓
+PostgreSQL :5434
+```
+
+## Transitional Architecture
+
+```text
+Browser
+   ↓
+Next.js Monolith
+   │
+   ├── New BFF / Prisma Layer
+   │
+   ├── Migrated Cognitive Modules
+   │
+   └── Temporary FastAPI Bridge
+              ↓
+           Ollama
+```
+
+During migration, Next.js may communicate with FastAPI only for functionality that has not yet been migrated.
+
+## Final Architecture
+
+```text
+Browser
+   ↓
+Next.js Monolith
+   │
+   ├── UI
+   ├── BFF
+   ├── Authentication
+   ├── Sessions
+   ├── Context Engine
+   ├── Memory
+   ├── RAG
+   ├── Tools
+   ├── Permission Guard
+   ├── Planner
+   ├── LLM Provider
+   └── Ollama Adapter
+          │
+          ├── PostgreSQL + pgvector
+          └── Ollama
+```
+
+---
+
+# 📊 Revised Roadmap
 
 | Phase | Subsystem | Key Deliverables | Status |
 | :---: | :--- | :--- | :---: |
-| **Phase 1** | **FastAPI + Brain + Ollama Abstraction** | Abstract `LLMProvider`, `OllamaAdapter`, Docker Compose (:3009, :5434) | ✅ **Completed** |
-| **Phase 2** | **Sessions + Messages Persistence** | SQLAlchemy 2.0 Async, Alembic migrations, CRUD API routes | ✅ **Completed** |
-| **Phase 3** | **Next.js + SSE Client UI** | Next.js 15 FAOS App Router (:3008), SSE parser, markdown chat & sidebar | ✅ **Completed** |
-| **Phase 4** | **Conversation History & Context Engine** | `conversation_summaries`, sliding window, token budgeting, Context Engine | ✅ **Completed** |
-| **Phase 5** | **Long-Term Memory & Hybrid Retrieval** | `memories` table, structured fact extraction + pgvector cosine similarity | ✅ **Completed** |
-| **Phase 7** | **Security & User Confirmations** | Guardrails requiring interactive user approval for destructive operations | 🔄 **Next Up** |
-| **Phase 7B** | **Next.js BFF Prisma Layer** | Prisma ORM in Next.js for User Accounts, Preferences, and Audit State | 📌 **Flagged (Planned)** |
-| **Phase 8** | **Knowledge Ingestion & pgvector RAG** | Document chunking, vector indexing, retrieval with grounded citations | 📋 Planned |
-| **Phase 9** | **Planner & Autonomous Execution** | Progressive autonomy, multi-step planning loops, tool observation loop | 📋 Planned |
-| **Phase 10** | **Production Hardening & Deployment** | Audit logs, benchmarks, rate limiting, and release packaging | 📋 Planned |
+| **Phase 1** | **FastAPI + Brain + Ollama Abstraction** | Abstract `LLMProvider`, `OllamaAdapter`, Docker Compose (:3009, :5434) | ✅ Completed |
+| **Phase 2** | **Sessions + Messages Persistence** | SQLAlchemy 2.0 Async, Alembic migrations, CRUD API routes | ✅ Completed |
+| **Phase 3** | **Next.js + SSE Client UI** | Next.js 15 FAOS App Router (:3008), SSE parser, markdown chat & sidebar | ✅ Completed |
+| **Phase 4** | **Conversation History + Context Engine** | `conversation_summaries`, sliding window, token budgeting, Context Engine | ✅ Completed |
+| **Phase 5** | **Long-Term Memory + Hybrid Retrieval** | `memories` table, structured fact extraction + pgvector cosine similarity | ✅ Completed |
+| **Phase 6** | **Tool Registry + Permission Guardrails** | Centralized tool registry, safety classification (read-only vs dangerous) | ✅ Completed |
+| **Phase 7** | **Security + Interactive Confirmations** | Guardrails requiring interactive user approval for destructive operations | 🔄 **Next Up** |
+| **Phase 7B** | **Next.js BFF + Prisma Layer** | Prisma ORM in Next.js for User Accounts, Preferences, and Audit State | 🔄 **Migration Foundation** |
+| **Phase 8** | **Knowledge Ingestion + RAG** | Document chunking, vector indexing, retrieval with grounded citations | 📋 Planned |
+| **Phase 9** | **Planner + Autonomous Execution** | Progressive autonomy, multi-step planning loops, tool observation loop | 📋 Planned |
+| **Phase 10** | **Cognitive Engine Migration to Next.js** | Native TypeScript ContextEngine, Memory, Tools, and Ollama adapter | 📋 Planned |
+| **Phase 11** | **FastAPI Retirement** | Decommission temporary Python bridge once Next.js handles all cognitive tasks | 📋 Planned |
+| **Phase 12** | **Production Hardening + Deployment** | Audit logs, benchmarks, rate limiting, and single-command startup | 📋 Planned |
 
 ---
 
-## 🔍 Detailed Phase Specifications
+# 🧠 Cognitive Engine Target Structure
 
-### ✅ Phase 1: FastAPI + Brain + Ollama Abstraction (Done)
-- **Goal**: Establish pure local-first inference with zero external cloud dependencies.
-- **Completed Deliverables**:
-  - Abstract interface `LLMProvider` in `src/app/modules/brain/interfaces.py` defining `generate`, `stream_chat`, and `get_embedding`.
-  - Concrete implementation `OllamaAdapter` in `src/app/infrastructure/ollama/adapter.py` connecting to `http://localhost:11434`.
-  - Configurable model selection (`qwen2.5`, `qwen3`) via environment variables.
-  - Docker container entrypoint fixed with `PYTHONPATH=/app/src` and live reload.
+The cognitive engine should become a native module inside Next.js.
 
-### ✅ Phase 2: Sessions + Messages Persistence (Done)
-- **Goal**: Full conversation history persistence in PostgreSQL.
-- **Completed Deliverables**:
-  - SQLAlchemy Async models for `Session` and `Message` in `src/app/modules/sessions/models.py`.
-  - Alembic migration `3ccc2be706bc_initial_schema` creating `sessions` and `messages` tables on port `5434`.
-  - API endpoints: `POST /api/v1/sessions`, `GET /api/v1/sessions`, `GET /api/v1/sessions/{id}`, `DELETE /api/v1/sessions/{id}`.
-  - Automatic persistence of user inputs and assistant streaming responses into database.
+Recommended structure:
 
-### ✅ Phase 3: Next.js + SSE Integration (Done)
-- **Goal**: Premium, responsive web interface adhering to Feature-Architecture-Oriented System (FAOS).
-- **Completed Deliverables**:
-  - Scaffolding from `next-template-v1` configured on **Port 3008**.
-  - Resilient SSE client in `src/shared/lib/sse.ts` supporting chunk buffering and `AbortController`.
-  - Business features:
-    - `features/chat`: `ChatContainer`, `ChatMessageList`, `ChatMessageBubble`, `ChatInput`, `StreamingCursor`, `useChatStream`.
-    - `features/sessions`: `SessionSidebar`, `SessionListItem`, Server Actions in `src/app/actions/sessions.ts`.
-  - Server Components with SSR session prefetching in `src/app/page.tsx` and `src/app/c/[sessionId]/page.tsx`.
-  - Architecture verified with 0 lint warnings, 0 type errors, and clean Next.js production build.
-
----
-
-### 🔄 Phase 4: Conversation History & Context Engine (Ready to Execute)
-
-#### 1. Objectives
-Instead of sending an unbounded array of raw messages to the model on every turn, the **Context Engine** selects and formats the optimal token package:
-- **Token Budgeting**: Respect context windows (e.g. 8k, 32k) and allocate token budgets across system prompt, long-term memory, conversation summary, and recent messages.
-- **Conversation Summarization**: Automatically compress older conversation turns into a rolling summary stored in PostgreSQL.
-- **Sliding Message Window**: Keep the latest $K$ turns verbatim for precise conversational flow.
-
-#### 2. Database Schema Additions
-```sql
-CREATE TABLE conversation_summaries (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-    summary TEXT NOT NULL,
-    last_message_id UUID NOT NULL REFERENCES messages(id),
-    tokens_count INTEGER,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-CREATE INDEX idx_conversation_summaries_session_id ON conversation_summaries(session_id);
-```
-
-#### 3. Code Implementation Steps
-1. **Alembic Migration**:
-   - Create `conversation_summaries` model in `src/app/modules/sessions/models.py`.
-   - Generate and run Alembic migration for `conversation_summaries`.
-2. **Context Engine Module (`src/app/modules/brain/context.py`)**:
-   - Implement `ContextEngine` class.
-   - Methods:
-     - `get_relevant_summary(session_id: UUID) -> Optional[str]`
-     - `get_recent_messages(session_id: UUID, limit: int = 10) -> List[Message]`
-     - `assemble_prompt_context(session_id: UUID, current_input: str) -> List[Dict[str, str]]`
-3. **Background Summarizer Service**:
-   - When message count in a session exceeds a threshold (e.g. > 10 messages), trigger asynchronous summary generation using `LLMProvider`.
-4. **Brain Orchestration Update (`src/app/modules/brain/orchestrator.py`)**:
-   - Wire `ContextEngine` into `BrainOrchestrator.process_chat_stream`.
-
----
-
-### 📋 Phase 5: Long-Term Memory & Hybrid Retrieval
-
-#### 1. Objectives
-Extract durable facts, user preferences, and project decisions from conversations and store them in structured form, augmented by pgvector for semantic retrieval.
-
-#### 2. Database Schema
-```sql
-CREATE TABLE memories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    source_session_id UUID REFERENCES sessions(id) ON DELETE SET NULL,
-    category VARCHAR(50) NOT NULL, -- 'preference', 'project', 'decision', 'goal'
-    subject VARCHAR(100) NOT NULL,
-    content TEXT NOT NULL,
-    importance VARCHAR(20) DEFAULT 'medium', -- 'low', 'medium', 'high', 'critical'
-    confidence FLOAT DEFAULT 1.0,
-    embedding vector(768), -- EmbeddingGemma or nomic-embed-text
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-CREATE INDEX idx_memories_category ON memories(category);
-CREATE INDEX idx_memories_embedding ON memories USING hnsw (embedding vector_cosine_ops);
-```
-
-#### 3. Core Principles
-- **Structured first**: Filter by user, project, category, and importance via SQL `WHERE`.
-- **Vector search for semantic recall**: Cosine distance search over embeddings to discover relevant context when keywords differ.
-- **Selective extraction**: Only write to memory when the user explicitly instructs ("Remember that...") or when high-confidence durable information is detected.
-
----
-
-### 📋 Phase 6: Tool Registry & Permission Guardrails
-
-#### 1. Objectives
-Allow Sovereign to interact with its local environment (files, git, web search) while maintaining strict safety boundaries.
-
-#### 2. Classification Matrix
-- **READ-ONLY (Auto-Approved)**:
-  - File reading (`read_file`, `list_dir`, `grep_search`)
-  - Project inspection (`git status`, `git log`)
-  - Web search (local documentation or allowed query)
-- **LOW-RISK (Auto-Approved / Notified)**:
-  - Draft creation in scratch directory
-  - Temporary data generation
-- **CONFIRMATION REQUIRED (Explicit User Consent)**:
-  - File modifications / writes
-  - File deletions
-  - Git commits / pushes
-  - Destructive SQL queries (`DROP`, `TRUNCATE`, bulk `DELETE`)
-
-#### 3. Architecture
 ```text
-Brain Tool Call Request
+src/
+├── app/
+│   ├── api/
+│   │   ├── chat/
+│   │   ├── sessions/
+│   │   ├── tools/
+│   │   ├── memory/
+│   │   └── knowledge/
+│   │
+│   ├── actions/
+│   └── ...
+│
+├── features/
+│   ├── chat/
+│   ├── sessions/
+│   ├── memory/
+│   ├── knowledge/
+│   └── tools/
+│
+├── server/
+│   ├── brain/
+│   │   ├── orchestrator.ts
+│   │   ├── context.ts
+│   │   ├── summarizer.ts
+│   │   ├── planner.ts
+│   │   ├── memory.ts
+│   │   └── types.ts
+│   │
+│   ├── llm/
+│   │   ├── provider.ts
+│   │   ├── ollama.ts
+│   │   └── model-router.ts
+│   │
+│   ├── tools/
+│   │   ├── registry.ts
+│   │   ├── permissions.ts
+│   │   ├── executor.ts
+│   │   └── confirmations.ts
+│   │
+│   ├── rag/
+│   │   ├── ingestion.ts
+│   │   ├── chunking.ts
+│   │   ├── embeddings.ts
+│   │   └── retrieval.ts
+│   │
+│   └── db/
+│       └── prisma.ts
+│
+├── shared/
+│   ├── lib/
+│   ├── types/
+│   └── utils/
+│
+└── prisma/
+    └── schema.prisma
+```
+
+---
+
+# 🤖 LLM Abstraction
+
+The cognitive engine must not depend directly on Qwen.
+
+Create a provider abstraction:
+
+```text
+LLMProvider
+    │
+    ├── generate()
+    ├── streamChat()
+    └── getEmbedding()
+```
+
+Implementation:
+
+```text
+LLMProvider
+      │
+      ▼
+Model Router
+      │
+ ┌────┼───────────────┐
+ ▼    ▼               ▼
+Qwen  Qwen Coder      Other Local Models
+```
+
+Ollama remains the local inference gateway.
+
+This allows Sovereign to change models without changing the cognitive engine.
+
+---
+
+# 🔀 Model Routing
+
+Sovereign should eventually support automatic model selection.
+
+Example:
+
+```text
+User Request
+      │
+      ▼
+Model Router
+      │
+      ├── Simple conversation
+      │       ↓
+      │     Small Qwen
+      │
+      ├── Programming
+      │       ↓
+      │     Qwen Coder
+      │
+      ├── Complex reasoning
+      │       ↓
+      │     Larger local model
+      │
+      └── Embeddings
+              ↓
+         EmbeddingGemma
+```
+
+The user should also be able to manually select a model from the UI.
+
+---
+
+# 🧠 Context Engine
+
+The Context Engine remains responsible for constructing the optimal context package.
+
+```text
+Current User Input
        │
        ▼
-Permission Guard
+Context Engine
        │
-   Is action safe?
-   ├── YES ──► Execute Tool ──► Feed Result to Brain
-   └── NO  ──► Emit SSE 'confirmation_required' event
-                     │
-                     ▼
-               Wait for User Action in UI (Approve / Deny)
+       ├── System Instructions
+       ├── Relevant Long-Term Memories
+       ├── Conversation Summary
+       ├── Recent Messages
+       ├── Retrieved Knowledge
+       └── Tool Results
+       │
+       ▼
+LLM Provider
+```
+
+Context should be token-budgeted.
+
+Do not blindly send the entire conversation history.
+
+---
+
+# 💾 Memory Architecture
+
+Memory remains separate from conversation history.
+
+```text
+Conversation
+     │
+     ▼
+Memory Extraction
+     │
+     ├── Preference
+     ├── Project
+     ├── Decision
+     └── Goal
+     │
+     ▼
+Structured Memory
+     │
+     ▼
+Embedding
+     │
+     ▼
+pgvector
+```
+
+Memory retrieval should combine:
+
+```text
+SQL filtering
+      +
+semantic vector search
+```
+
+Structured filtering must happen before or alongside vector retrieval.
+
+---
+
+# 📚 Knowledge / RAG
+
+Knowledge remains separate from personal memory.
+
+```text
+Documents
+   │
+   ▼
+Parser
+   │
+   ▼
+Chunker
+   │
+   ▼
+Embedding
+   │
+   ▼
+PostgreSQL + pgvector
+   │
+   ▼
+Semantic Retrieval
+   │
+   ▼
+Context Engine
+```
+
+Supported sources:
+
+```text
+Markdown
+PDF
+TXT
+Code
+Documentation
+Project files
+```
+
+Retrieved knowledge should provide explicit source/file citations.
+
+---
+
+# 🛠️ Tool Architecture
+
+Tools are registered through a native tool registry.
+
+```text
+Brain
+  │
+  ▼
+Tool Registry
+  │
+  ▼
+Permission Guard
+  │
+  ├── Safe
+  │    ↓
+  │  Execute
+  │
+  └── Requires Confirmation
+       ↓
+    UI Confirmation
+       ↓
+    Approve / Reject
+       ↓
+    Execute / Cancel
+```
+
+No third-party agent framework should be introduced.
+
+Do not use:
+
+```text
+LangChain
+LlamaIndex
+CrewAI
+OpenClaw runtime
+```
+
+The orchestration system remains native to Sovereign.
+
+---
+
+# 🔐 Permission Model
+
+## READ-ONLY
+
+Automatically approved:
+
+```text
+read_file
+list_dir
+grep_search
+git status
+git log
+safe web search
+```
+
+## LOW-RISK
+
+Automatically approved or notified:
+
+```text
+temporary files
+scratch files
+temporary generated data
+```
+
+## CONFIRMATION REQUIRED
+
+Explicit user approval:
+
+```text
+file writes
+file modifications
+file deletion
+git commit
+git push
+destructive SQL
+bulk DELETE
+DROP
+TRUNCATE
 ```
 
 ---
 
-### 📋 Phase 7: Security & Interactive UI Confirmations
-- Next.js UI modal/inline widget rendering interactive approval cards for pending tool calls.
-- FastAPI confirmation endpoint: `POST /api/v1/tools/confirm/{execution_id}` with decision (`approved` / `rejected`).
-- Backend audit log table: `tool_executions` recording every invocation, arguments, approver, status, and output.
+# 🧩 Planner
+
+The planner should only activate when necessary.
+
+```text
+User Request
+      │
+      ▼
+Complexity Check
+      │
+      ├── Simple
+      │      ↓
+      │   Direct Answer
+      │
+      ├── Single Tool
+      │      ↓
+      │   Tool Execution
+      │
+      └── Complex
+             ↓
+          Planner
+             ↓
+           Plan
+             ↓
+           Step
+             ↓
+           Tool
+             ↓
+         Observe
+             ↓
+          Reflect
+             ↓
+        Next Step
+             ↓
+       Final Synthesis
+```
+
+Simple requests must remain simple.
+
+Do not invoke the planner unnecessarily.
 
 ---
 
-### 📌 Phase 7B: Next.js Monolith BFF + Prisma ORM Layer (Flagged)
-- **Goal**: Establish a pure application backend layer inside the Next.js Monolith using Prisma ORM connected to PostgreSQL (`:5434`).
-- **Core Separation**:
-  - **Next.js Monolith + Prisma**: Owns application-level data (User accounts, user preferences, theme/model defaults, session metadata, bookmarks, and UI audit records).
-  - **FastAPI Sovereign Brain**: Owns the cognitive engine (ContextEngine, long-term memory extraction, pgvector semantic search, tool registry, and Ollama dispatch).
-- **Key Deliverables**:
-  - Prisma CLI & `@prisma/client` dependency in `soveriegn-brain-app`.
-  - Connection string: `DATABASE_URL=postgresql://postgres:mysecretpassword@localhost:5434/sovereign_brain` in `.env.local`.
-  - Schema (`prisma/schema.prisma`):
-    - `User`: user accounts, identity, email.
-    - `UserPreference`: dark/light theme, default models, notification settings.
-    - `SessionMetadata`: tags, pin state, client-side metadata.
-  - Singleton Prisma client instance at `src/shared/lib/prisma.ts`.
-  - Next.js Server Actions utilizing Prisma for direct, type-safe database queries.
+# 🗄️ Database Ownership
+
+PostgreSQL remains the central persistence layer.
+
+Prisma should become the primary database access layer for the Next.js monolith.
+
+Core data domains:
+
+```text
+User
+UserPreference
+Session
+SessionMetadata
+Message
+ConversationSummary
+Memory
+KnowledgeDocument
+KnowledgeChunk
+ToolExecution
+AuditLog
+```
+
+pgvector remains responsible for semantic retrieval.
 
 ---
 
-### 📋 Phase 8: Knowledge Ingestion & pgvector RAG
-- Document parsing for Markdown, PDF, text, and code files.
-- Chunking strategy (recursive text splitting, token-aware chunks with header preservation).
-- Vector embeddings generated via local Ollama (`embeddinggemma` or `nomic-embed-text`).
-- Storage in `knowledge_documents` and `knowledge_chunks` tables with HNSW index.
-- Context injection into Context Engine with explicit file citations.
+# 🐍 FastAPI Migration
+
+FastAPI should be migrated module-by-module.
+
+Recommended migration order:
+
+```text
+1. LLM Provider
+       ↓
+2. Ollama Adapter
+       ↓
+3. Context Engine
+       ↓
+4. Conversation Summarizer
+       ↓
+5. Memory
+       ↓
+6. RAG
+       ↓
+7. Tool Registry
+       ↓
+8. Permission Guard
+       ↓
+9. Planner
+       ↓
+10. Brain Orchestrator
+```
+
+After each migration:
+
+```text
+Test
+ ↓
+Compare behavior
+ ↓
+Switch Next.js to new implementation
+ ↓
+Remove old FastAPI dependency
+```
+
+Only retire FastAPI once all cognitive responsibilities have been successfully migrated.
 
 ---
 
-### 📋 Phase 9: Planner & Autonomous Multi-Step Execution
-- Implementation of progressive autonomy:
-  - **Level 0 (Direct)**: Direct answer for simple Q&A.
-  - **Level 1 (Tool-Assisted)**: Single tool invocation (e.g. read a file and summarize).
-  - **Level 2 (Multi-Step Planner)**: Complex tasks decomposed into plan steps, executed iteratively with intermediate observations.
-- Python-native control loop:
-  `Plan -> Step -> Tool -> Observe -> Reflect -> Next Step -> Final Synthesis`.
+# 🚫 Final Architecture Constraint
+
+FastAPI must NOT become a permanent mandatory dependency simply because the initial implementation used Python.
+
+The target is:
+
+```text
+                    PROJECT SOVEREIGN
+                           │
+                           ▼
+                    NEXT.JS MONOLITH
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+       Prisma          Cognitive         UI/BFF
+          │              Engine
+          │                │
+          │        ┌───────┼────────┐
+          │        │       │        │
+          ▼        ▼       ▼        ▼
+     PostgreSQL  Memory   RAG     Tools
+          │
+          └────────── pgvector
+                           
+                           │
+                           ▼
+                         Ollama
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+            Qwen       Qwen Coder   Embedding
+```
 
 ---
 
-### 📋 Phase 10: Production Hardening & Deployment
-- Rate limiting and local resource monitoring (GPU/VRAM/CPU tracking for Ollama).
-- Test suites: automated unit tests for Context Engine, Tool Guard, and API contracts.
-- System metrics and latency instrumentation.
-- Single-command start scripts (`start-sovereign.ps1` / `docker-compose.prod.yml`).
+# 🔒 Non-Negotiable Engineering Rules
+
+1. **Local-First Only**
+   * No OpenAI API.
+   * No Anthropic API.
+   * No Gemini API.
+   * No OpenRouter.
+   * Ollama is the local inference gateway.
+
+2. **Native Cognitive Engine**
+   * No LangChain.
+   * No LlamaIndex.
+   * No CrewAI.
+   * No OpenClaw runtime.
+   * Implement orchestration natively.
+
+3. **Next.js Monolith**
+   * Next.js is the long-term application and cognitive runtime.
+   * FastAPI is transitional only.
+
+4. **Database Discipline**
+   * PostgreSQL is the primary persistence layer.
+   * Prisma is the primary Next.js ORM.
+   * pgvector handles semantic retrieval.
+
+5. **Simple Requests Stay Simple**
+   * Do not activate tools or planning unless required.
+
+6. **Security by Default**
+   * Destructive operations require explicit confirmation.
+   * Every tool execution is auditable.
+
+7. **Incremental Migration**
+   * Do not rewrite working functionality unnecessarily.
+   * Preserve existing Phase 1–6 functionality.
+   * Migrate one subsystem at a time.
+
+8. **Git Attribution**
+   * All commits must be authored strictly by:
+     `Reign Mark Valdez <valdezreignmark@gmail.com>`
+   * No `Co-authored-by:` lines.
+   * No AI signatures.
 
 ---
 
-## 🔒 Non-Negotiable Engineering Rules
-1. **Local-First Only**: Zero external cloud API keys (no OpenAI, no Anthropic, no Gemini, no OpenRouter).
-2. **Git Attribution**: All commits must be authored strictly by `Reign Mark Valdez <valdezreignmark@gmail.com>`. **NO `Co-authored-by:` or AI signatures**.
-3. **No Third-Party Agent Frameworks**: No LangChain, no LlamaIndex, no CrewAI, no OpenClaw runtime. The cognitive engine is native Python.
-4. **Simple Requests Stay Simple**: Do not activate planner or tools unless the request necessitates multi-step execution.
+# 🏁 Final Vision
+
+Project Sovereign is not intended to be merely a chatbot UI around Qwen.
+
+It is intended to become a **local-first cognitive platform** where the model is only one component of a larger system:
+
+```text
+                 SOVEREIGN
+                     │
+       ┌─────────────┼─────────────┐
+       ▼             ▼             ▼
+    Memory          RAG          Tools
+       │             │             │
+       └─────────────┼─────────────┘
+                     ▼
+                  Context
+                     │
+                     ▼
+                  Planner
+                     │
+                     ▼
+               Model Router
+                     │
+          ┌──────────┼──────────┐
+          ▼          ▼          ▼
+        Qwen      Qwen Coder   Other
+          │
+          ▼
+        Ollama
+```
+
+The ultimate goal is:
+
+> **One Next.js monolith containing the Sovereign application, cognitive engine, memory, RAG, tools, planner, security layer, and model orchestration — backed by PostgreSQL/pgvector and local Ollama inference.**
+
+FastAPI is the bridge that helped build the system.
+
+**Next.js becomes the destination.**
