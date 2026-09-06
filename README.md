@@ -132,16 +132,26 @@ docker compose exec api uv run alembic upgrade head
 | **Memory** | `/api/v1/memories/user/{user_id}` | `GET` | Get all stored memories for a user |
 | **Knowledge**| `/api/v1/knowledge/ingest` | `POST` | Ingest document, chunk & compute embeddings |
 | **Knowledge**| `/api/v1/knowledge/search` | `POST` | Query knowledge base via vector similarity search |
+| **Tools** | `/api/v1/tools` | `GET` | List registered tools and their permission levels |
+| **Tools** | `/api/v1/tools/execute` | `POST` | Execute a tool under permission guardrails |
+| **Tools** | `/api/v1/tools/confirmations/{id}/approve` | `POST` | Approve a pending confirmation-required tool call |
+| **Tools** | `/api/v1/tools/confirmations/{id}/reject` | `POST` | Reject a pending confirmation-required tool call |
+| **Tools** | `/api/v1/tools/confirmations/pending` | `GET` | List tool calls awaiting human approval |
+| **Tools** | `/api/v1/tools/audit` | `GET` | Tool execution audit trail |
+
+`/api/v1/chat`, `/api/v1/chat/stream`, `/api/v1/sessions` and the tools confirmation/audit endpoints all accept an optional `user_id` for attribution — see the BFF note below for where that comes from.
 
 ---
 
-## 💻 Frontend (Next.js / Vite) Integration
+## 💻 Frontend Integration
 
-The API comes with **CORS enabled** (`http://localhost:3000` allowed by default). You can connect a Next.js or React frontend directly to `http://localhost:3009`.
+**The browser does not talk to this API directly.** `soveriegn-brain-app` (the Next.js frontend) is a BFF: it proxies every request to this API server-side via a private, non-public URL, and is the only intended caller. CORS here is only permissive enough for that server-to-server relationship (plus local dev convenience) — it is not an invitation to call this API from arbitrary client-side code. See `docs/ARCHITECTURE_DECISION.md` for the full reasoning.
 
 ---
 
 ## 📚 Documentation & Developer Guides
 
-- 🏛️ **[System Architecture Guide](file:///c:/Users/My%20PC/Documents/Github/personal/project-py/soveriegn-brain-api-py/docs/ARCHITECTURE.md)**: Deep dive into the cognitive orchestrator, prompt lifecycle, domain modules, and database ER diagram.
-- 💡 **[Junior Developer Guide & Gotchas](file:///c:/Users/My%20PC/Documents/Github/personal/project-py/soveriegn-brain-api-py/docs/GOOD_TO_KNOW.md)**: Onboarding guide covering the top 5 pitfalls (Async SQLAlchemy, pgvector migrations, Docker host networking), how to add new tools, and common daily commands.
+- 🎯 **[Architecture Decision](docs/ARCHITECTURE_DECISION.md)**: Why FastAPI owns cognition and Next.js is the application shell — read this first.
+- 🏛️ **[System Architecture Guide](docs/ARCHITECTURE.md)**: Deep dive into the cognitive orchestrator, prompt lifecycle, domain modules, and database ER diagram.
+- 📊 **[Implementation Plan](docs/IMPLEMENTATION_PLAN.md)**: The single source of truth for what's built vs. planned, phase by phase.
+- 💡 **[Junior Developer Guide & Gotchas](docs/GOOD_TO_KNOW.md)**: Onboarding guide covering the top 5 pitfalls (Async SQLAlchemy, pgvector migrations, Docker host networking), how to add new tools, and common daily commands.

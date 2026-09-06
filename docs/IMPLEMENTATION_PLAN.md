@@ -16,13 +16,18 @@
 PROJECT SOVEREIGN
 
 Next.js (Port 3008)
-├── UI
-├── BFF / API
-├── Auth, user preferences (Prisma)
-├── Session metadata
-└── SSE proxy to FastAPI
-        │
+├── UI (login optional — chat/sessions work with no account)
+├── NextAuth (Credentials + JWT) + BFF under src/app/api/**
+├── SSE proxy to FastAPI (/api/chat/stream)
+└── Rate limiting (login only)
+        │           │
+        │           └──► Redis (Port 6380) — login rate-limit counters only
         ▼
+   Postgres (Port 5435) — Next.js's OWN database, via Prisma
+   ├── User (email/passwordHash, sessionVersion for "sign out everywhere")
+   └── LoginSession (login history — IP, user-agent, timestamp)
+        │
+        ▼ server-only fetch, FASTAPI_INTERNAL_URL
 Python / FastAPI — Sovereign Brain (Port 3009)
 ├── Brain orchestration & decisions
 ├── Context Engine
@@ -41,14 +46,15 @@ Ollama (Port 11434)
 └── Other local models
 
         ▼
-PostgreSQL + pgvector (Port 5434)
-├── Users
-├── Sessions & Messages
+PostgreSQL + pgvector (Port 5434) — FastAPI's OWN database, separate from Next.js's
+├── Sessions & Messages (sessions.user_id optionally tags the Next.js user, if any)
 ├── Summaries
 ├── Memories
 ├── Knowledge Chunks
-└── Tool Executions & Audit Logs
+└── Tool Executions & Audit Logs (executed_by optionally attributes the Next.js user)
 ```
+
+Two separate Postgres databases, two separate ORMs (Prisma / SQLAlchemy) — this is deliberate, not an oversight. Next.js's database holds only login-related data; everything else stays in FastAPI's database. Neither ORM ever writes to the other's tables.
 
 ### The Unbreakable Principle:
 
@@ -146,14 +152,14 @@ The goal is to make the model behave as part of a larger Sovereign cognitive sys
 | **Phase 1** | **FastAPI + Brain + Ollama Abstraction** | Abstract `LLMProvider`, `OllamaAdapter`, Docker Compose (:3009, :5434) | ✅ **Completed** |
 | **Phase 2** | **Sessions + Messages Persistence** | SQLAlchemy 2.0 Async, Alembic migrations, CRUD API routes | ✅ **Completed** |
 | **Phase 3a** | **Next.js Chat UI + SSE Consumption** | Chat UI, markdown rendering, sidebar, browser-side SSE stream parsing | ✅ **Completed** |
-| **Phase 3b** | **Next.js Application Monolith / BFF** | Internal API routes (`src/app/api/`) proxying FastAPI, SSE proxy so the browser never calls :3009 directly, Prisma + user accounts, Auth (NextAuth/Auth.js), Server Actions, durable user preferences | ❌ **Not Started** — browser currently calls FastAPI on :3009 directly; no Prisma, auth, or BFF routes exist |
+| **Phase 3b** | **Next.js Application Monolith / BFF** | Internal API routes (`src/app/api/`) proxying FastAPI, SSE proxy, Prisma + user accounts, Auth (NextAuth/Auth.js), login history + "sign out everywhere", Redis login rate-limiting | ✅ **Completed** — login is intentionally **optional**: chat/sessions work with no account; logging in adds session/audit attribution, login history, and revocation. No durable user-preferences feature exists yet (nothing to store there so far). |
 | **Phase 4** | **Conversation History & Context Engine** | `conversation_summaries`, sliding window, token budgeting, Context Engine | ✅ **Completed** |
 | **Phase 5** | **Long-Term Memory & Hybrid Retrieval** | `memories` table, structured fact extraction + pgvector cosine similarity | ✅ **Completed** |
 | **Phase 6** | **Tool Registry & Permission Guardrails** | Centralized tool registry, safety classification (read-only vs dangerous) | ✅ **Completed** |
 | **Phase 7** | **Tool Confirmation Workflow & Audit Trail** | Interactive UI confirmation cards, approve/reject endpoints, `tool_executions` audit trail | ✅ **Completed** |
 | **Phase 8** | **Knowledge Ingestion & pgvector RAG** | `ingestion.py`/`retrieval.py` scaffolding exists; still missing: `knowledge/service.py` aggregator (currently empty), document upload pipeline (PDF/DOCX/TXT), grounded citations | 🔄 **In Progress** |
 | **Phase 9** | **Planner & Autonomous Multi-Step Loop** | Only a keyword-matching dispatcher exists (`brain/decisions.py`); no plan-step-observe-reflect loop yet | 📋 Planned |
-| **Phase 10** | **Production Hardening** | API auth & rate limiting (`core/security.py`, currently empty), structured request logging (`core/logging.py`, currently empty), model routing (Qwen vs Coder), GPU keep-alive/idle unload, deployment automation | 📋 Planned |
+| **Phase 10** | **Production Hardening** | Login rate-limiting done (Next.js side, Redis). Still missing: FastAPI-side API auth (`core/security.py`, currently empty), structured request logging (`core/logging.py`, currently empty), model routing (Qwen vs Coder), GPU keep-alive/idle unload, deployment automation | 🔄 In Progress |
 
 > This table is the single source of truth for phase status. `ARCHITECTURE.md` and `WORKFLOW_AND_ROADMAP.md` link here rather than keeping their own copies — the project has drifted out of sync three times from duplicated status tables going stale independently.
 

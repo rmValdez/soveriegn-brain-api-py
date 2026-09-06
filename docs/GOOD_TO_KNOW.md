@@ -78,10 +78,8 @@ Welcome to the **Sovereign Personal AI Brain** codebase! This guide compiles ess
 ---
 
 ### 🚨 Gotcha 5: CORS with Next.js Frontend
-* **The Problem**: Browsers block cross-origin requests by default when a Next.js app (running on `http://localhost:3000`) calls the API on `http://localhost:3009`.
-* **The Fix**:
-  - `CORSMiddleware` is registered in `src/app/main.py`.
-  - If you host your frontend on a new domain or different port, remember to add it to the `allow_origins` list in `main.py`.
+* **Not the load-bearing mechanism it used to be**: the browser no longer calls this API directly — `soveriegn-brain-app` proxies everything server-side through its BFF (`src/app/api/**`), which isn't subject to CORS at all (server-to-server). `CORSMiddleware` in `src/app/main.py` still exists and matters if you hit this API directly from a browser (Swagger UI at `/docs`, manual testing, a future non-Next.js client), but it is not what connects the real app to the browser anymore.
+* If you add a new direct-from-browser caller, add its origin to `allow_origins` in `main.py` — but first ask whether it should go through the Next.js BFF instead, per `docs/ARCHITECTURE_DECISION.md`.
 
 ---
 
