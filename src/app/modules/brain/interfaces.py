@@ -15,3 +15,8 @@ class LLMProvider(ABC):
     async def stream_chat(self, messages: List[Dict[str, str]], model: Optional[str] = None) -> AsyncGenerator[str, None]:
         """Stream chat tokens progressively."""
         pass
+
+    @abstractmethod
+    async def get_embedding(self, text: str, model: Optional[str] = None) -> List[float]:
+        """Generate vector embedding for semantic search."""
+        pass

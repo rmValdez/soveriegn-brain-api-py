@@ -33,6 +33,9 @@ class BrainOrchestrator:
             
         await repo.add_message(session_id, "user", message)
         
+        # Check and extract long-term memory if instructed
+        await self.context_engine.extract_memory_if_instructed(session_id, message, db)
+        
         # Decision parsing for action routing
         decision = parse_decision_from_llm(message)
         
@@ -60,6 +63,9 @@ class BrainOrchestrator:
             session_id = session.id
             
         await repo.add_message(session_id, "user", message)
+        
+        # Check and extract long-term memory if instructed
+        await self.context_engine.extract_memory_if_instructed(session_id, message, db)
         
         decision = parse_decision_from_llm(message)
         

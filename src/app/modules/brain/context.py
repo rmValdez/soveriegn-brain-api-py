@@ -1,9 +1,13 @@
 from typing import List, Dict, Optional
+import re
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.brain.interfaces import LLMProvider
 from app.infrastructure.ollama.adapter import OllamaAdapter
 from app.modules.sessions.repository import SessionRepository
 from app.modules.sessions.models import Session, Message
+from app.modules.memory.repository import MemoryRepository
+from app.modules.memory.schemas import MemoryCreate
+from app.modules.memory.models import MemoryType
 
 SOVEREIGN_SYSTEM_PROMPT = (
     "You are Sovereign Brain, a local-first, context-aware autonomous AI assistant.\n"
@@ -41,7 +45,7 @@ class ContextEngine:
     ) -> List[Dict[str, str]]:
         """
         Builds the structured context array for LLMProvider consumption:
-        1. System Prompt (enhanced with conversation summary if available).
+        1. System Prompt (enhanced with relevant long-term memories and conversation summary).
         2. Sliding window of recent message turns.
         3. Current user message.
         """
@@ -49,6 +53,29 @@ class ContextEngine:
         session = await repo.get_session(session_id)
 
         system_content = SOVEREIGN_SYSTEM_PROMPT
+
+        # 1. Retrieve relevant long-term memories via Hybrid Search
+        try:
+            query_vector = await self.llm.get_embedding(current_user_message)
+            mem_repo = MemoryRepository(db)
+            memories = await mem_repo.search_hybrid(
+                query=current_user_message,
+                query_vector=query_vector if query_vector else None,
+                limit=4
+            )
+            if memories:
+                memory_lines = [
+                    f"- [{m.type.value if hasattr(m.type, 'value') else m.type}] {m.content}"
+                    for m in memories
+                ]
+                system_content += (
+                    f"\n\n[LONG-TERM MEMORIES]\n"
+                    f"The following durable context has been remembered:\n"
+                    + "\n".join(memory_lines)
+                )
+        except Exception:
+            # Memory retrieval is resilient and non-blocking
+            pass
 
         if not session or not session.messages:
             return [
@@ -58,7 +85,7 @@ class ContextEngine:
 
         total_messages = len(session.messages)
 
-        # Check if conversation exceeds threshold for rolling summarization
+        # 2. Check if conversation exceeds threshold for rolling summarization
         if total_messages > self.summary_trigger_threshold:
             summary_record = await repo.get_summary(session_id)
             
@@ -66,8 +93,7 @@ class ContextEngine:
             if not summary_record or self._should_refresh_summary(session, summary_record):
                 try:
                     summary_record = await self._refresh_summary(session, repo)
-                except Exception as e:
-                    # Non-fatal: continue with available context if summarization fails
+                except Exception:
                     pass
 
             if summary_record and summary_record.summary:
@@ -87,22 +113,68 @@ class ContextEngine:
             {"role": "system", "content": system_content}
         ]
 
-        # Append recent turns (filter out if the last message in DB is already the current_user_message to avoid duplication)
+        # 3. Append recent turns (avoiding duplicate if already in DB)
         for msg in recent_messages:
-            # Avoid duplicating the current message if it was already committed to DB
             if msg == recent_messages[-1] and msg.role == "user" and msg.content.strip() == current_user_message.strip():
                 continue
             context.append({"role": msg.role, "content": msg.content})
 
-        # Append current user message
+        # 4. Append current user message
         context.append({"role": "user", "content": current_user_message})
 
         return context
 
+    async def extract_memory_if_instructed(
+        self,
+        session_id: str,
+        user_message: str,
+        db: AsyncSession
+    ) -> Optional[str]:
+        """
+        Detects explicit memory commands (e.g. 'remember that...', 'we decided that...')
+        and persists them into the long-term memories table.
+        """
+        patterns = [
+            r"^(?:please\s+)?remember\s+(?:that\s+)?(.+)",
+            r"^(?:keep\s+in\s+mind|never\s+forget)\s+(?:that\s+)?(.+)",
+            r"^(?:my\s+preference\s+is\s+to|i\s+prefer)\s+(.+)",
+            r"^(?:we\s+decided\s+that|decision:)\s+(.+)"
+        ]
+
+        fact = None
+        mem_type = MemoryType.fact
+
+        for p in patterns:
+            match = re.search(p, user_message.strip(), re.IGNORECASE)
+            if match:
+                fact = match.group(1).strip()
+                if "prefer" in p:
+                    mem_type = MemoryType.preference
+                elif "decid" in p:
+                    mem_type = MemoryType.decision
+                break
+
+        if not fact:
+            return None
+
+        try:
+            mem_repo = MemoryRepository(db)
+            embedding = await self.llm.get_embedding(fact)
+            memory_obj = MemoryCreate(
+                user_id="default_user",
+                type=mem_type,
+                subject=fact[:40] + "..." if len(fact) > 40 else fact,
+                content=fact,
+                importance="high",
+                confidence=1.0,
+                source_session_id=session_id
+            )
+            await mem_repo.create(memory_obj, embedding=embedding if embedding else None)
+            return fact
+        except Exception:
+            return None
+
     def _should_refresh_summary(self, session: Session, summary_record) -> bool:
-        """
-        Returns True if new messages since last summarization exceed summary_rebuild_gap.
-        """
         if not summary_record.last_message_id:
             return True
 
@@ -115,10 +187,6 @@ class ContextEngine:
         return unsummarized_count >= self.summary_rebuild_gap
 
     async def _refresh_summary(self, session: Session, repo: SessionRepository):
-        """
-        Generates and saves a concise summary of older messages using the local LLM.
-        """
-        # Summarize older messages excluding the most recent window
         older_messages = session.messages[:-self.recent_messages_limit]
         if not older_messages:
             return None

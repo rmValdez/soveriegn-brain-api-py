@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
 from app.core.database import get_db
-from .schemas import MemoryCreate, MemoryUpdate, MemoryResponse
+from .schemas import MemoryCreate, MemoryUpdate, MemoryResponse, MemorySearchRequest
 from .service import MemoryService
 
 router = APIRouter(prefix="/api/v1/memories", tags=["memories"])
@@ -17,6 +17,13 @@ async def create_memory(
     service: MemoryService = Depends(get_memory_service)
 ):
     return await service.create_memory(memory)
+
+@router.post("/search", response_model=List[MemoryResponse])
+async def search_memories(
+    search_req: MemorySearchRequest,
+    service: MemoryService = Depends(get_memory_service)
+):
+    return await service.search_memories(search_req)
 
 @router.get("/user/{user_id}", response_model=List[MemoryResponse])
 async def get_user_memories(

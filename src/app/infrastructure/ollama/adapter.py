@@ -38,3 +38,11 @@ class OllamaAdapter(LLMProvider):
                     yield chunk["message"]["content"]
         except Exception as e:
             yield f"\n[Error streaming from Ollama ({target_model}): {str(e)}]"
+
+    async def get_embedding(self, text: str, model: Optional[str] = None) -> List[float]:
+        target_model = model or settings.ollama_embedding_model
+        try:
+            res = await self.client.embeddings(model=target_model, prompt=text)
+            return res.get("embedding", [])
+        except Exception:
+            return []
